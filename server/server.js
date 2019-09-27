@@ -12,6 +12,9 @@ app.use(bodyparser.json());
 app.use(express.static('static'));
 
 let config = JSON.parse(fs.readFileSync('./data.json'));
+console.log('Current Config:')
+console.log(JSON.stringify(config, null, 2));
+
 fs = fs.promises;
 
 app.post('/data', async (req, res) => {
@@ -24,9 +27,15 @@ app.post('/data', async (req, res) => {
   const text = JSON.stringify(newConfig)
   await fs.writeFile('./data.json', Buffer.from(text));
   config = newConfig;
+  console.log('Received new config.')
 })
-app.get('/', (req, res) => {
-  return res.sendFile(path.resolve('./main.html'));
+app.get('/', async (req, res) => {
+  let str = await fs.readFile(path.resolve('./main.html'))
+  str = str.toString();
+  str = str.replace('{{currentWaterLevel}}', config.value);
+  const timeAgo = moment(config.date).fromNow();
+  str = str.replace('{{lastUpdated}}', timeAgo)
+  return res.status(200).send(str);
 })
 
 app.listen(process.env.PORT)
